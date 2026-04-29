@@ -2,11 +2,9 @@ import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import prisma from '@/lib/prisma';
 
-const mpToken = process.env.MP_ACCESS_TOKEN && !process.env.MP_ACCESS_TOKEN.includes('TU_ACCESS_TOKEN') 
-  ? process.env.MP_ACCESS_TOKEN 
-  : 'TEST-3392471691238472-042813-882f05a96db4e9d08e1c6b8c8d880d6b-1786524387';
+const mpToken = process.env.MP_ACCESS_TOKEN
 
-const client = new MercadoPagoConfig({ 
+const client = new MercadoPagoConfig({
   accessToken: mpToken
 });
 
@@ -45,7 +43,7 @@ export async function POST(request) {
               notas: `Pago automático procesado vía Mercado Pago. Transacción: ${paymentId}`
             }
           });
-          
+
           console.log(`✅ Pago aprobado y registrado: ${paymentId}`);
         }
       }
