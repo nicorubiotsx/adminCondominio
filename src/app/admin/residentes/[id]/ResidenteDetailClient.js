@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useActionState } from 'react';
-import { updateResidente, toggleResidenteStatus } from '@/actions/residentes';
+import { updateResidente, toggleResidenteStatus, resetPassword } from '@/actions/residentes';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function ResidenteDetailClient({ residente, departamentos }) {
   const router = useRouter();
@@ -22,6 +23,14 @@ export default function ResidenteDetailClient({ residente, departamentos }) {
     router.refresh();
   };
 
+  const handleResetPassword = async () => {
+    if (confirm('¿Resetear la contraseña de este residente a su RUT?')) {
+      const res = await resetPassword(residente.id);
+      if (res.success) toast.success(res.message);
+      else toast.error(res.error);
+    }
+  };
+
   return (
     <>
       <div className="page-header">
@@ -31,6 +40,7 @@ export default function ResidenteDetailClient({ residente, departamentos }) {
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <Link href="/admin/residentes" className="btn btn-secondary">← Volver</Link>
+          <button className="btn btn-secondary" onClick={handleResetPassword} title="Resetear contraseña al RUT">🔑 Reset Clave</button>
           <button className="btn btn-primary" onClick={() => setEditing(!editing)}>
             {editing ? '✕ Cancelar' : '✏️ Editar'}
           </button>

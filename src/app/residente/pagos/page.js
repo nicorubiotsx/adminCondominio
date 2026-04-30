@@ -17,9 +17,18 @@ export default async function ResidentePagosPage() {
     orderBy: { fechaPago: 'desc' }
   });
 
+  const deudas = await prisma.deudaMensual.findMany({
+    where: { 
+      departamentoId: residente.departamentoId,
+      estado: { in: ['PENDIENTE', 'PARCIAL'] }
+    },
+    orderBy: { mes: 'asc' }
+  });
+
   return (
     <ResidentePagosClient 
       pagos={pagos} 
+      deudas={deudas}
       residenteId={session.userId} 
       departamentoId={residente.departamentoId} 
     />

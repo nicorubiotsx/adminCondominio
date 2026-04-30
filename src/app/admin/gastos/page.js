@@ -7,7 +7,7 @@ export default async function GastosPage({ searchParams }) {
   const params = await searchParams;
   const search = params?.search || '';
   const page = parseInt(params?.page || '1');
-  const { gastos, total, pages } = await getGastos(search, page);
+  const { gastos, total, pages, montoTotal } = await getGastos(search, page);
 
-  return <GastosClient gastos={gastos} total={total} pages={pages} currentPage={page} search={search} />;
+  return <GastosClient gastos={gastos} total={total} pages={pages} currentPage={page} search={search} montoTotal={montoTotal} />;
 }

@@ -70,3 +70,85 @@ export async function createReserva(prevState, formData) {
     revalidatePath('/residente/reservas');
   }
 }
+
+// ADMIN ACTIONS
+
+export async function updateReservaEstado(id, estado) {
+  const session = await getSession();
+  if (!session || (session.rol !== 'ADMIN' && session.rol !== 'SUPER_ADMIN')) throw new Error('No autorizado');
+
+  try {
+    await prisma.reserva.update({
+      where: { id },
+      data: { estado }
+    });
+    revalidatePath('/admin/reservas');
+    return { success: true, message: `Reserva ${estado.toLowerCase()} exitosamente` };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'Error al actualizar reserva' };
+  }
+}
+
+export async function createAreaComun(formData) {
+  const session = await getSession();
+  if (!session || (session.rol !== 'ADMIN' && session.rol !== 'SUPER_ADMIN')) throw new Error('No autorizado');
+
+  const nombre = formData.get('nombre');
+  const descripcion = formData.get('descripcion');
+  const capacidad = parseInt(formData.get('capacidad')) || null;
+  const costoReserva = parseInt(formData.get('costoReserva')) || 0;
+  const activa = formData.get('activa') === 'true';
+
+  if (!nombre) return { success: false, error: 'El nombre es obligatorio' };
+
+  try {
+    await prisma.areaComun.create({
+      data: { nombre, descripcion, capacidad, costoReserva, activa }
+    });
+    revalidatePath('/admin/reservas');
+    return { success: true, message: 'Área común creada' };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'Error al crear área común' };
+  }
+}
+
+export async function updateAreaComun(id, formData) {
+  const session = await getSession();
+  if (!session || (session.rol !== 'ADMIN' && session.rol !== 'SUPER_ADMIN')) throw new Error('No autorizado');
+
+  const nombre = formData.get('nombre');
+  const descripcion = formData.get('descripcion');
+  const capacidad = parseInt(formData.get('capacidad')) || null;
+  const costoReserva = parseInt(formData.get('costoReserva')) || 0;
+  const activa = formData.get('activa') === 'true';
+
+  if (!nombre) return { success: false, error: 'El nombre es obligatorio' };
+
+  try {
+    await prisma.areaComun.update({
+      where: { id },
+      data: { nombre, descripcion, capacidad, costoReserva, activa }
+    });
+    revalidatePath('/admin/reservas');
+    return { success: true, message: 'Área común actualizada' };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'Error al actualizar área común' };
+  }
+}
+
+export async function deleteAreaComun(id) {
+  const session = await getSession();
+  if (!session || (session.rol !== 'ADMIN' && session.rol !== 'SUPER_ADMIN')) throw new Error('No autorizado');
+
+  try {
+    await prisma.areaComun.delete({ where: { id } });
+    revalidatePath('/admin/reservas');
+    return { success: true, message: 'Área común eliminada' };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'No se puede eliminar porque tiene reservas asociadas' };
+  }
+}

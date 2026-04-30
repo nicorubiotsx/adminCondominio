@@ -9,9 +9,9 @@ export default function ResidenteMantenimientoClient({ mantenimientos, residente
   const [showModal, setShowModal] = useState(false);
   const [state, formAction, pending] = useActionState(createMantenimiento, { errors: {}, success: false });
 
-  if (state.success && showModal) { 
-    setShowModal(false); 
-    state.success = false; 
+  if (state.success && showModal) {
+    setShowModal(false);
+    state.success = false;
     toast.success('Solicitud enviada exitosamente.');
     setTimeout(() => window.location.reload(), 1500);
   }
@@ -82,7 +82,7 @@ export default function ResidenteMantenimientoClient({ mantenimientos, residente
               {/* Ocultos */}
               <input type="hidden" name="residenteId" value={residenteId} />
               <input type="hidden" name="departamentoId" value={departamentoId} />
-              
+
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Título del Problema *</label>

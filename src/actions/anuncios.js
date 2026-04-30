@@ -62,6 +62,33 @@ export async function createAnuncio(prevState, formData) {
   return { success: true, message: 'Anuncio creado exitosamente' };
 }
 
+export async function updateAnuncio(id, prevState, formData) {
+  await requireAuth();
+  const rawData = {
+    titulo: formData.get('titulo'),
+    contenido: formData.get('contenido'),
+    prioridad: formData.get('prioridad'),
+    fechaFin: formData.get('fechaFin'),
+  };
+  const result = anuncioSchema.safeParse(rawData);
+  if (!result.success) return { errors: formatZodErrors(result.error), success: false };
+  
+  const data = { ...result.data };
+  if (!data.fechaFin) {
+    data.fechaFin = null;
+  } else {
+    data.fechaFin = new Date(data.fechaFin);
+  }
+  
+  await prisma.anuncio.update({
+    where: { id },
+    data
+  });
+
+  revalidatePath('/admin/anuncios');
+  return { success: true, message: 'Anuncio actualizado' };
+}
+
 export async function toggleAnuncio(id) {
   await requireAuth();
   const anuncio = await prisma.anuncio.findUnique({ where: { id } });

@@ -1,22 +1,32 @@
 'use client';
 
 import { useActionState, useState, useEffect } from 'react';
-import { updateMiPerfil } from '@/actions/residentes';
+import { updateMiPerfil, changePasswordResidente } from '@/actions/residentes';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Home, Mail, Phone, ShieldCheck, Edit2, X, Download, FileText, Wrench } from 'lucide-react';
+import { Home, Mail, Phone, ShieldCheck, Edit2, X, Download, FileText, Wrench, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ResidentePerfilClient({ residente, deuda, cuotaBase }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [state, action, pending] = useActionState(updateMiPerfil, { success: false, errors: {} });
+  const [pwState, pwAction, pwPending] = useActionState(changePasswordResidente, { success: false, errors: {} });
 
   useEffect(() => {
     if (state.success) {
       toast.success(state.message);
       setIsEditing(false);
-      state.success = false; // Reset to avoid re-triggering
+      state.success = false;
     }
   }, [state]);
+
+  useEffect(() => {
+    if (pwState.success) {
+      toast.success(pwState.message);
+      setShowPasswordModal(false);
+      pwState.success = false;
+    }
+  }, [pwState]);
 
   const exportAccountStatement = async () => {
     const { default: jsPDF } = await import('jspdf');
@@ -163,8 +173,54 @@ export default function ResidentePerfilClient({ residente, deuda, cuotaBase }) {
                 </div>
               </form>
             )}
+            
+            {!isEditing && (
+              <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowPasswordModal(true)}>
+                  <Lock size={16} style={{ marginRight: '6px' }} /> Cambiar Contraseña
+                </button>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Modal de Cambio de Contraseña */}
+        {showPasswordModal && (
+          <div className="modal-overlay" onClick={() => setShowPasswordModal(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+              <div className="modal-header">
+                <h2>Cambiar Contraseña</h2>
+                <button className="modal-close" onClick={() => setShowPasswordModal(false)}>✕</button>
+              </div>
+              <form action={pwAction}>
+                <div className="modal-body">
+                  <div className="form-group">
+                    <label className="form-label">Contraseña Actual</label>
+                    <input name="currentPassword" type="password" className="form-input" required />
+                    {pwState.errors?.currentPassword && <p className="form-error">{pwState.errors.currentPassword}</p>}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Nueva Contraseña</label>
+                    <input name="newPassword" type="password" className="form-input" required />
+                    {pwState.errors?.newPassword && <p className="form-error">{pwState.errors.newPassword}</p>}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Confirmar Nueva Contraseña</label>
+                    <input name="confirmPassword" type="password" className="form-input" required />
+                    {pwState.errors?.confirmPassword && <p className="form-error">{pwState.errors.confirmPassword}</p>}
+                  </div>
+                  {pwState.errors?.form && <p className="form-error">{pwState.errors.form}</p>}
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowPasswordModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary" disabled={pwPending}>
+                    {pwPending ? 'Cambiando...' : 'Actualizar Contraseña'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         <div className="data-card">
           <div className="data-card-header">

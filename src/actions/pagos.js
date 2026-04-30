@@ -98,6 +98,18 @@ export async function updatePagoEstado(id, estado) {
     include: { residente: true, departamento: true }
   });
 
+  // Si se verificó exitosamente, actualizar también el estado de la DeudaMensual si existe
+  if (estado === 'VERIFICADO') {
+    await prisma.deudaMensual.updateMany({
+      where: {
+        departamentoId: pago.departamentoId,
+        mes: pago.mesPago,
+        estado: { not: 'PAGADA' }
+      },
+      data: { estado: 'PAGADA' }
+    });
+  }
+
   // Si se verificó exitosamente y el residente tiene correo, enviar recibo
   if (estado === 'VERIFICADO' && pago.residente?.email) {
     const template = templates.pagoVerificado(pago.residente, pago);

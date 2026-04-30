@@ -66,6 +66,33 @@ export async function createMantenimiento(prevState, formData) {
   return { success: true, message: 'Solicitud creada exitosamente' };
 }
 
+export async function updateMantenimiento(id, prevState, formData) {
+  await requireAuth();
+  const rawData = {
+    titulo: formData.get('titulo'),
+    descripcion: formData.get('descripcion'),
+    prioridad: formData.get('prioridad'),
+    estado: formData.get('estado'),
+    categoria: formData.get('categoria'),
+    costoEstimado: formData.get('costoEstimado'),
+    residenteId: formData.get('residenteId'),
+    departamentoId: formData.get('departamentoId'),
+    notas: formData.get('notas'),
+  };
+  const result = mantenimientoSchema.safeParse(rawData);
+  if (!result.success) return { errors: formatZodErrors(result.error), success: false };
+  
+  const data = { ...result.data };
+  data.costoEstimado = data.costoEstimado || null;
+  data.residenteId = data.residenteId || null;
+  data.departamentoId = data.departamentoId || null;
+  data.notas = data.notas || null;
+
+  await prisma.mantenimiento.update({ where: { id }, data });
+  revalidatePath('/admin/mantenimiento');
+  return { success: true, message: 'Solicitud actualizada' };
+}
+
 export async function updateMantenimientoEstado(id, estado) {
   await requireAuth();
   const data = { estado };

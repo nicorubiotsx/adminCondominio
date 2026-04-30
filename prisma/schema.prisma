@@ -10,8 +10,9 @@ datasource db {
 // Usuarios administradores del sistema
 model User {
   id        String   @id @default(cuid())
+  rut       String?  @unique
   email     String   @unique
-  password  String
+  password  String?
   nombre    String
   apellido  String
   rol       String   @default("ADMIN") // ADMIN, SUPER_ADMIN
@@ -268,6 +269,7 @@ model Publicacion {
   activa      Boolean  @default(true)
   createdAt   DateTime @default(now())
 
+  residenteId String
   residente   Residente @relation(fields: [residenteId], references: [id])
 }
 
@@ -279,6 +281,7 @@ model Vehiculo {
   modelo          String
   color           String?
   tipo            String   @default("AUTO") // AUTO, MOTO, CAMIONETA, BICICLETA
+  numeroEstacionamiento String?
   notas           String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -288,4 +291,17 @@ model Vehiculo {
   
   departamentoId  String
   departamento    Departamento @relation(fields: [departamentoId], references: [id])
+}
+
+// Auditoría de acciones del sistema
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?  // ID del usuario que realizó la acción
+  userType    String?  // USER (Admin/Conserje) o RESIDENTE
+  userEmail   String?  // Email para identificación rápida
+  accion      String   // LOGIN, CREATE_PAYMENT, DELETE_RESIDENT, etc.
+  detalles    String?  // Descripción detallada de la acción
+  metadata    Json?    // Datos técnicos adicionales
+  ip          String?  // IP desde donde se realizó
+  createdAt   DateTime @default(now())
 }

@@ -24,7 +24,7 @@ export async function getGastos(search = '', page = 1, limit = 10) {
       }
     : {};
 
-  const [gastos, total] = await Promise.all([
+  const [gastos, total, totalAmount] = await Promise.all([
     prisma.gastoComun.findMany({
       where,
       skip,
@@ -32,9 +32,18 @@ export async function getGastos(search = '', page = 1, limit = 10) {
       orderBy: { fecha: 'desc' },
     }),
     prisma.gastoComun.count({ where }),
+    prisma.gastoComun.aggregate({
+      where,
+      _sum: { monto: true }
+    })
   ]);
 
-  return { gastos, total, pages: Math.ceil(total / limit) };
+  return { 
+    gastos, 
+    total, 
+    pages: Math.ceil(total / limit),
+    montoTotal: totalAmount._sum.monto || 0
+  };
 }
 
 export async function createGasto(prevState, formData) {

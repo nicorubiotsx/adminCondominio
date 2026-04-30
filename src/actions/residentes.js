@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { residenteSchema, formatZodErrors } from '@/lib/validations';
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { logAudit } from '@/lib/audit';
 
 async function requireAuth() {
   const session = await getSession();
@@ -94,11 +95,17 @@ export async function createResidente(prevState, formData) {
   if (!data.departamentoId) delete data.departamentoId;
   if (!data.notas) delete data.notas;
 
-  // Hashear password (por defecto es su cedula)
-  const bcrypt = await import('bcryptjs');
-  data.password = await bcrypt.hash(data.cedula, 12);
+  // No seteamos password por defecto para permitir el flujo de activación
+  // data.password = await bcrypt.hash(data.cedula, 12);
 
   await prisma.residente.create({ data });
+
+  await logAudit({
+    accion: 'CREAR_RESIDENTE',
+    detalles: `Residente creado: ${data.nombre} ${data.apellido}`,
+    metadata: { cedula: data.cedula, tipo: data.tipo }
+  });
+
   revalidatePath('/admin/residentes');
   return { success: true, message: 'Residente creado exitosamente' };
 }
@@ -137,6 +144,13 @@ export async function updateResidente(id, prevState, formData) {
   data.notas = data.notas || null;
 
   await prisma.residente.update({ where: { id }, data });
+
+  await logAudit({
+    accion: 'ACTUALIZAR_RESIDENTE',
+    detalles: `Residente actualizado: ${data.nombre} ${data.apellido}`,
+    metadata: { id, cedula: data.cedula }
+  });
+
   revalidatePath('/admin/residentes');
   revalidatePath(`/admin/residentes/${id}`);
   return { success: true, message: 'Residente actualizado exitosamente' };
@@ -148,8 +162,37 @@ export async function deleteResidente(id) {
     where: { id },
     data: { activo: false },
   });
+
+  await logAudit({
+    accion: 'ELIMINAR_RESIDENTE',
+    detalles: `Residente desactivado (eliminado lógicamente): ${id}`,
+    metadata: { id }
+  });
+
   revalidatePath('/admin/residentes');
   return { success: true };
+}
+
+export async function resetPassword(id) {
+  await requireAuth();
+  const residente = await prisma.residente.findUnique({ where: { id } });
+  if (!residente) return { success: false, error: 'Residente no encontrado' };
+
+  const bcrypt = await import('bcryptjs');
+  const hashedPassword = await bcrypt.hash(residente.cedula, 12);
+
+  await prisma.residente.update({
+    where: { id },
+    data: { password: hashedPassword }
+  });
+
+  await logAudit({
+    accion: 'RESETEO_PASSWORD_ADMIN',
+    detalles: `Admin reseteó contraseña de: ${residente.nombre} ${residente.apellido}`,
+    metadata: { residenteId: id }
+  });
+
+  return { success: true, message: 'La contraseña ha sido reseteada al RUT del residente.' };
 }
 
 export async function toggleResidenteStatus(id) {
@@ -182,4 +225,43 @@ export async function updateMiPerfil(prevState, formData) {
 
   revalidatePath('/residente/perfil');
   return { success: true, message: 'Perfil actualizado exitosamente' };
+}
+
+export async function changePasswordResidente(prevState, formData) {
+  const session = await getSession();
+  if (!session || session.rol !== 'RESIDENTE') throw new Error('No autorizado');
+
+  const currentPassword = formData.get('currentPassword');
+  const newPassword = formData.get('newPassword');
+  const confirmPassword = formData.get('confirmPassword');
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return { errors: { form: 'Todos los campos son obligatorios' }, success: false };
+  }
+
+  if (newPassword !== confirmPassword) {
+    return { errors: { confirmPassword: 'Las contraseñas no coinciden' }, success: false };
+  }
+
+  if (newPassword.length < 6) {
+    return { errors: { newPassword: 'La contraseña debe tener al menos 6 caracteres' }, success: false };
+  }
+
+  const residente = await prisma.residente.findUnique({ where: { id: session.userId } });
+  
+  const bcrypt = await import('bcryptjs');
+  const valid = await bcrypt.compare(currentPassword, residente.password);
+  
+  if (!valid) {
+    return { errors: { currentPassword: 'La contraseña actual es incorrecta' }, success: false };
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 12);
+  
+  await prisma.residente.update({
+    where: { id: session.userId },
+    data: { password: hashedPassword }
+  });
+
+  return { success: true, message: 'Contraseña actualizada exitosamente' };
 }

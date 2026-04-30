@@ -63,7 +63,7 @@ export default function ConfigClient({ config, conserjes = [] }) {
             </h3>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Cuota Base Mensual ($)</label>
+                <label className="form-label">Cuota Base Mensual (CLP)</label>
                 <input name="cuotaBase" type="number" className="form-input" defaultValue={config.cuotaBase} required />
               </div>
               <div className="form-group">

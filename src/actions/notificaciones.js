@@ -65,3 +65,19 @@ export async function createNotificacion({ titulo, mensaje, tipo = 'INFO', enlac
     }
   });
 }
+
+export async function createBulkNotificaciones({ titulo, mensaje, tipo = 'INFO', enlace = null, usuariosIds = [] }) {
+  if (usuariosIds.length === 0) return;
+  
+  const data = usuariosIds.map(id => ({
+    titulo,
+    mensaje,
+    tipo,
+    enlace,
+    usuarioId: id
+  }));
+
+  await prisma.notificacion.createMany({
+    data
+  });
+}

@@ -1,20 +1,39 @@
 'use client';
 
-import { useState, useActionState } from 'react';
+import { useState, useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createAnuncio, toggleAnuncio, deleteAnuncio } from '@/actions/anuncios';
+import { createAnuncio, toggleAnuncio, deleteAnuncio, updateAnuncio } from '@/actions/anuncios';
 import { formatDateTime } from '@/lib/utils';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 export default function AnunciosClient({ anuncios, total, pages, currentPage }) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
-  const [state, formAction, pending] = useActionState(createAnuncio, { errors: {}, success: false });
+  const [editingAnuncio, setEditingAnuncio] = useState(null);
 
-  if (state.success && showModal) { setShowModal(false); state.success = false; }
+  const actionToUse = editingAnuncio
+    ? updateAnuncio.bind(null, editingAnuncio.id)
+    : createAnuncio;
+
+  const [state, formAction, pending] = useActionState(actionToUse, { errors: {}, success: false });
+
+  useEffect(() => {
+    if (state.success && showModal) {
+      toast.success(editingAnuncio ? 'Anuncio actualizado' : 'Anuncio publicado');
+      setShowModal(false);
+      setEditingAnuncio(null);
+      state.success = false;
+    }
+  }, [state, showModal, editingAnuncio]);
 
   const handleToggle = async (id) => { await toggleAnuncio(id); router.refresh(); };
   const handleDelete = async (id) => { if (confirm('¿Eliminar este anuncio?')) { await deleteAnuncio(id); router.refresh(); } };
+
+  const handleEdit = (anuncio) => {
+    setEditingAnuncio(anuncio);
+    setShowModal(true);
+  };
 
   const prioridadColors = { BAJA: 'badge-default', NORMAL: 'badge-info', ALTA: 'badge-warning', URGENTE: 'badge-danger' };
 
@@ -22,7 +41,7 @@ export default function AnunciosClient({ anuncios, total, pages, currentPage }) 
     <>
       <div className="page-header">
         <div><h1>📢 Anuncios</h1><p>{total} anuncios en el sistema</p></div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>➕ Nuevo Anuncio</button>
+        <button className="btn btn-primary" onClick={() => { setEditingAnuncio(null); setShowModal(true); }}>➕ Nuevo Anuncio</button>
       </div>
 
       <div className="data-card">
@@ -47,6 +66,7 @@ export default function AnunciosClient({ anuncios, total, pages, currentPage }) 
                     <td>{formatDateTime(a.createdAt)}</td>
                     <td>
                       <div className="action-btns">
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(a)} title="Editar">✏️</button>
                         <button className={`btn ${a.activo ? 'btn-warning' : 'btn-success'} btn-sm`} onClick={() => handleToggle(a.id)}>
                           {a.activo ? '⏸️' : '▶️'}
                         </button>
@@ -71,25 +91,28 @@ export default function AnunciosClient({ anuncios, total, pages, currentPage }) 
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay" onClick={() => { setShowModal(false); setEditingAnuncio(null); }}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header"><h2>➕ Nuevo Anuncio</h2><button className="modal-close" onClick={() => setShowModal(false)}>✕</button></div>
+            <div className="modal-header">
+              <h2>{editingAnuncio ? '✏️ Editar Anuncio' : '➕ Nuevo Anuncio'}</h2>
+              <button className="modal-close" onClick={() => { setShowModal(false); setEditingAnuncio(null); }}>✕</button>
+            </div>
             <form action={formAction}>
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Título *</label>
-                  <input name="titulo" className="form-input" placeholder="Título del anuncio" required />
+                  <input name="titulo" className="form-input" placeholder="Título del anuncio" defaultValue={editingAnuncio?.titulo || ''} required />
                   {state.errors?.titulo && <p className="form-error">{state.errors.titulo}</p>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Contenido *</label>
-                  <textarea name="contenido" className="form-textarea" placeholder="Contenido del anuncio..." style={{ minHeight: '150px' }} required />
+                  <textarea name="contenido" className="form-textarea" placeholder="Contenido del anuncio..." style={{ minHeight: '150px' }} defaultValue={editingAnuncio?.contenido || ''} required />
                   {state.errors?.contenido && <p className="form-error">{state.errors.contenido}</p>}
                 </div>
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Prioridad *</label>
-                    <select name="prioridad" className="form-select">
+                    <select name="prioridad" className="form-select" defaultValue={editingAnuncio?.prioridad || 'NORMAL'}>
                       <option value="BAJA">Baja</option>
                       <option value="NORMAL">Normal</option>
                       <option value="ALTA">Alta</option>
@@ -98,13 +121,15 @@ export default function AnunciosClient({ anuncios, total, pages, currentPage }) 
                   </div>
                   <div className="form-group">
                     <label className="form-label">Fecha de Expiración</label>
-                    <input name="fechaFin" type="date" className="form-input" />
+                    <input name="fechaFin" type="date" className="form-input" defaultValue={editingAnuncio?.fechaFin ? new Date(editingAnuncio.fechaFin).toISOString().split('T')[0] : ''} />
                   </div>
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary" disabled={pending}>{pending ? '⏳ Publicando...' : '📢 Publicar'}</button>
+                <button type="button" className="btn btn-secondary" onClick={() => { setShowModal(false); setEditingAnuncio(null); }}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" disabled={pending}>
+                  {pending ? '⏳ Guardando...' : (editingAnuncio ? '💾 Guardar Cambios' : '📢 Publicar')}
+                </button>
               </div>
             </form>
           </div>

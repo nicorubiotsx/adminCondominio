@@ -28,6 +28,7 @@ const menuItems = [
   ]},
   { section: 'Sistema', items: [
     { href: '/admin/perfil', label: 'Mi Perfil', icon: '👤' },
+    { href: '/admin/auditoria', label: 'Auditoría', icon: '🛡️' },
     { href: '/admin/configuracion', label: 'Configuración', icon: '⚙️' },
   ]},
 ];

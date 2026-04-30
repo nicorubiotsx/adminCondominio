@@ -14,12 +14,31 @@ export default function PagosClient({ pagos, residentes, departamentos, total, p
   const [showModal, setShowModal] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
   const [state, formAction, pending] = useActionState(createPago, { errors: {}, success: false });
+  
+  // Estados para auto-completar departamento
+  const [selectedResidenteId, setSelectedResidenteId] = useState('');
+  const [selectedDeptoId, setSelectedDeptoId] = useState('');
 
   if (state.success && showModal) { 
     setShowModal(false); 
+    setSelectedResidenteId('');
+    setSelectedDeptoId('');
     state.success = false; 
     toast.success('Pago registrado con éxito');
   }
+
+  const handleResidenteChange = (e) => {
+    const residenteId = e.target.value;
+    setSelectedResidenteId(residenteId);
+    
+    // Buscar el residente en la lista para obtener su departamentoId
+    const residente = residentes.find(r => r.id === residenteId);
+    if (residente && residente.departamentoId) {
+      setSelectedDeptoId(residente.departamentoId);
+    } else {
+      setSelectedDeptoId('');
+    }
+  };
 
   const handleSearch = (e) => { e.preventDefault(); router.push(`/admin/pagos?search=${searchValue}&estado=${filtroEstado}`); };
   const handleFilterEstado = (estado) => { router.push(`/admin/pagos?search=${search}&estado=${estado}`); };
@@ -50,7 +69,7 @@ export default function PagosClient({ pagos, residentes, departamentos, total, p
     doc.text(`Departamento: ${pago.departamento.numero}`, 20, 90);
     
     doc.text(`Mes Correspondiente: ${pago.mesPago}`, 20, 110);
-    doc.text(`Monto: $${pago.monto.toFixed(2)}`, 20, 120);
+    doc.text(`Monto: ${formatCurrency(pago.monto)}`, 20, 120);
     doc.text(`Método de Pago: ${pago.metodoPago}`, 20, 130);
     doc.text(`Referencia: ${pago.referencia || 'N/A'}`, 20, 140);
     
@@ -171,7 +190,13 @@ export default function PagosClient({ pagos, residentes, departamentos, total, p
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Residente *</label>
-                    <select name="residenteId" className="form-select" required>
+                    <select 
+                      name="residenteId" 
+                      className="form-select" 
+                      value={selectedResidenteId}
+                      onChange={handleResidenteChange}
+                      required
+                    >
                       <option value="">Seleccionar...</option>
                       {residentes.filter(r => r.activo).map((r) => (
                         <option key={r.id} value={r.id}>{r.nombre} {r.apellido} ({r.cedula})</option>
@@ -181,7 +206,13 @@ export default function PagosClient({ pagos, residentes, departamentos, total, p
                   </div>
                   <div className="form-group">
                     <label className="form-label">Departamento *</label>
-                    <select name="departamentoId" className="form-select" required>
+                    <select 
+                      name="departamentoId" 
+                      className="form-select" 
+                      value={selectedDeptoId}
+                      onChange={(e) => setSelectedDeptoId(e.target.value)}
+                      required
+                    >
                       <option value="">Seleccionar...</option>
                       {departamentos.map((d) => (
                         <option key={d.id} value={d.id}>{d.numero} - Piso {d.piso}</option>
@@ -192,8 +223,8 @@ export default function PagosClient({ pagos, residentes, departamentos, total, p
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Monto ($) *</label>
-                    <input name="monto" type="number" step="0.01" className="form-input" placeholder="150.00" required />
+                    <label className="form-label">Monto (CLP) *</label>
+                    <input name="monto" type="number" step="1" className="form-input" placeholder="50.000" required />
                     {state.errors?.monto && <p className="form-error">{state.errors.monto}</p>}
                   </div>
                   <div className="form-group">
