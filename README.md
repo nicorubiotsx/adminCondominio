@@ -67,22 +67,22 @@ Crea un archivo `.env` en la raíz del proyecto basándote en el siguiente forma
 
 ```env
 # Base de Datos
-DATABASE_URL="postgresql://usuario:password@localhost:5432/condominio_db?schema=public"
+DATABASE_URL=""
 
 # Seguridad
-JWT_SECRET="tu_secreto_super_seguro_y_largo"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
+JWT_SECRET=""
+NEXT_PUBLIC_APP_URL=""
 
 # Pasarela de Pagos (MercadoPago)
 MP_ACCESS_TOKEN="TEST-tu_access_token_de_prueba"
 
 # Servidor de Correos (SMTP)
-SMTP_HOST="smtp.proveedor.com"
-SMTP_PORT=587
+SMTP_HOST=""
+SMTP_PORT=
 SMTP_SECURE=false
-SMTP_USER="tu_correo@condominio.com"
-SMTP_PASS="tu_contraseña"
-SMTP_FROM="no-reply@condominio.com"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_FROM=""
 ```
 
 ### 5. Configurar la Base de Datos
